@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VcfLens - vCard contact file inspector</title>
+<style>
+:root{--bg:#0b0e14;--panel:#121722;--line:#232c3d;--fg:#dbe4f0;--dim:#7d8ba1;--acc:#2dd4bf;--warn:#fbbf24;--err:#f87171;--ok:#4ade80;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;letter-spacing:.5px}
+header h1 span{color:var(--acc)}
+header .sub{color:var(--dim);font-size:13px}
+.wrap{padding:18px 22px;max-width:1080px;margin:0 auto}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+button,.filebtn{background:var(--panel);border:1px solid var(--line);color:var(--fg);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px}
+button:hover,.filebtn:hover{border-color:var(--acc);color:var(--acc)}
+button.active{border-color:var(--acc);color:var(--acc);background:#0c2420}
+input[type=file]{display:none}
+.summary{display:flex;gap:16px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--dim)}
+.summary b{color:var(--fg);font-weight:600}
+.notice{border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;display:none}
+.notice.warn{display:block;background:#2a2110;border:1px solid #6b5313;color:var(--warn)}
+.notice.err{display:block;background:#2a1010;border:1px solid #6b1313;color:var(--err)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.card h2{margin:0 0 2px;font-size:17px}
+.card .role{color:var(--dim);font-size:13px;margin-bottom:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:5px 10px 5px 0;text-align:left;vertical-align:top}
+td:first-child{color:var(--dim);white-space:nowrap;width:110px}
+.empty{color:var(--dim);padding:30px 0;text-align:center}
+.badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12px;font-weight:600}
+.badge.ok{background:#0f2413;color:var(--ok)}
+.badge.info{background:#0c2420;color:var(--acc)}
+.chip{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;background:#1a2130;color:var(--dim);margin-left:6px}
+footer{margin:26px 0 10px;text-align:center;color:var(--dim);font-size:12px}
+footer a{color:var(--acc);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Vcf<span>Lens</span></h1>
+  <div class="sub">see exactly what's inside a contacts export before you import it anywhere</div>
+</header>
+<div class="wrap">
+  <div class="controls">
+    <label class="filebtn">Open .vcf<input id="file" type="file" accept=".vcf,.vcard,text/vcard"></label>
+    <span style="color:var(--dim);font-size:12px">presets:</span>
+    <button data-preset="simple">full 3.0 card</button>
+    <button data-preset="multi">multi-contact + folding</button>
+    <button data-preset="qp">quoted-printable (2.1)</button>
+    <button data-preset="broken">unclosed card</button>
+  </div>
+  <div id="err" class="notice err"></div>
+  <div id="warn" class="notice warn"></div>
+  <div id="summary" class="summary" style="display:none"></div>
+  <div id="contacts"></div>
+  <div id="empty" class="empty">Open a .vcf file or pick a preset. Everything runs locally - the file never leaves your machine.</div>
+  <footer>VcfLens - cross-checked against the <a href="https://github.com/py-vobject/vobject" target="_blank" rel="noopener">vobject</a> library (31 checks). <a href="index.html">about</a></footer>
+</div>
+<script src="engine.js"></script>
+<script>
+'use strict';
+var PRESETS={"simple": "QkVHSU46VkNBUkQNClZFUlNJT046My4wDQpOOkRvZTtKYW5lO01hcmllO0RyLjtQaEQNCkZOOkRyLiBKYW5lIE1hcmllIERvZVwsIFBoRA0KT1JHOkFjbWUgQ29ycDtSZXNlYXJjaCBEaXZpc2lvbg0KVElUTEU6Q2hpZWYgU2NpZW50aXN0DQpURUw7VFlQRT1DRUxMOisxLTU1NS0wMTAwDQpURUw7VFlQRT1XT1JLLFZPSUNFOisxLTU1NS0wMjAwDQpFTUFJTDtUWVBFPUhPTUU6amFuZUBleGFtcGxlLmNvbQ0KRU1BSUw7VFlQRT1XT1JLOmouZG9lQGFjbWUuZXhhbXBsZQ0KQURSO1RZUEU9SE9NRTo7OzEyMyBNYWluIFN0O1NwcmluZ2ZpZWxkO0lMOzYyNzA0O1VTQQ0KQkRBWToxOTg1MDQxMg0KVVJMOmh0dHBzOi8vamFuZS5leGFtcGxlLmNvbQ0KTk9URTpGaXJzdCBsaW5lXG5TZWNvbmQgbGluZQ0KWC1DVVNUT00tSUQ6YWJjLTEyMw0KRU5EOlZDQVJEDQo=", "multi": "QkVHSU46VkNBUkQNClZFUlNJT046Mi4xDQpOOlNtaXRoO0JvYjs7Ow0KRk46Qm9iIFNtaXRoDQpURUw7SE9NRTtWT0lDRTorNDQgMjAgNzk0NiAwOTU4DQpOT1RFOkEgdmVyeSBsb25nIG5vdGUgdGhhdCBnZXRzIGZvbGRlZCBvbnRvIGEgc2Vjb25kIHBoeXNpY2FsIGxpbmUgYWNjb3INCiBkaW5nIHRvIHRoZSB2Q2FyZCBmb2xkaW5nIHJ1bGVzDQpFTkQ6VkNBUkQNCkJFR0lOOlZDQVJEDQpWRVJTSU9OOjQuMA0KTjpHYXJjaWE7QW5hOzs7DQpGTjpBbmEgR2FyY2lhDQpFTUFJTDtUWVBFPWhvbWU6YW5hQGV4YW1wbGUub3JnDQpFTkQ6VkNBUkQNCg==", "qp": "QkVHSU46VkNBUkQNClZFUlNJT046Mi4xDQpOO0NIQVJTRVQ9VVRGLTg7RU5DT0RJTkc9UVVPVEVELVBSSU5UQUJMRTpNPUMzPUJDbGxlcjtKPUMzPUJDcmc7OzsNCkZOO0NIQVJTRVQ9VVRGLTg7RU5DT0RJTkc9UVVPVEVELVBSSU5UQUJMRTpKPUMzPUJDcmdfTT1DMz1CQ2xsZXINCkVORDpWQ0FSRA0K", "broken": "QkVHSU46VkNBUkQNClZFUlNJT046My4wDQpGTjpVbmNsb3NlZCBDYXJkDQo="};
+function b64ToText(s){return decodeURIComponent(escape(atob(s)));}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function row(k,v){if(v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length))return '';return '<tr><td>'+esc(k)+'</td><td>'+v+'</td></tr>';}
+function chips(types){return (types||[]).map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join('');}
+function contactCard(c,i){
+  var s=c.summary;
+  var name=s.fn||((s.n?((s.n.prefix?s.n.prefix+' ':'')+s.n.given+' '+s.n.family):'')||'Contact '+(i+1));
+  var role=[s.title,(s.org||[]).filter(function(x){return x;}).join(' - ')].filter(function(x){return x;}).join(' @ ');
+  var h='';
+  if(s.n)h+=row('Name',esc([s.n.prefix,s.n.given,s.n.additional,s.n.family,s.n.suffix].filter(function(x){return x;}).join(' ')));
+  h+=row('Full name',esc(s.fn||''));
+  h+=row('Organization',esc((s.org||[]).filter(function(x){return x;}).join(' - ')));
+  h+=row('Title',esc(s.title||''));
+  for(var t=0;t<s.tel.length;t++)h+=row('Phone',esc(s.tel[t].value)+chips(s.tel[t].types));
+  for(var e=0;e<s.email.length;e++)h+=row('Email',esc(s.email[e].value)+chips(s.email[e].types));
+  for(var a=0;a<s.adr.length;a++){var ad=s.adr[a];h+=row('Address',esc([ad.city,ad.region,ad.code,ad.country].filter(function(x){return x;}).join(', '))+chips(ad.types));}
+  h+=row('Birthday',esc(s.bday||''));
+  for(var u=0;u<s.url.length;u++)h+=row('URL','<a href="'+esc(s.url[u])+'" target="_blank" rel="noopener" style="color:var(--acc)">'+esc(s.url[u])+'</a>');
+  h+=row('Note',esc(s.note||'').replace(/\n/g,'<br>'));
+  h+=row('Nickname',esc(s.nickname||''));
+  h+=row('Photo',s.has_photo?'<span class="badge info">present</span>':'');
+  if(s.other)h+=row('Other fields',s.other+' custom/other propert'+(s.other>1?'ies':'y'));
+  h+=row('vCard version','<span class="badge info">'+esc(s.version||'missing')+'</span>');
+  return '<div class="card"><h2>'+esc(name.trim())+'</h2>'+(role?'<div class="role">'+esc(role)+'</div>':'')+'<table>'+h+'</table></div>';
+}
+function load(text,name){
+  var r=VcfLens.parse(text);
+  var err=document.getElementById('err'),warn=document.getElementById('warn');
+  err.style.display='none';warn.style.display='none';
+  if(r.errors.length){err.style.display='block';err.textContent=r.errors.join('; ');}
+  if(r.warnings.length){warn.style.display='block';warn.textContent=r.warnings.join('; ');}
+  document.getElementById('empty').style.display='none';
+  var s=document.getElementById('summary');
+  s.style.display='flex';
+  var versions={};
+  r.contacts.forEach(function(c){var v=c.summary.version||'missing';versions[v]=(versions[v]||0)+1;});
+  var telN=0,emN=0;r.contacts.forEach(function(c){telN+=c.summary.tel.length;emN+=c.summary.email.length;});
+  s.innerHTML='<span>file <b>'+esc(name)+'</b></span>'+
+    '<span>contacts <b>'+r.contacts.length+'</b></span>'+
+    '<span>versions <b>'+Object.keys(versions).map(function(v){return v+' x'+versions[v];}).join(', ')+'</b></span>'+
+    '<span>phones <b>'+telN+'</b></span><span>emails <b>'+emN+'</b></span>'+
+    (r.folded_lines?'<span>folded lines <b>'+r.folded_lines+'</b></span>':'');
+  document.getElementById('contacts').innerHTML=r.contacts.map(contactCard).join('');
+}
+document.getElementById('file').addEventListener('change',function(){
+  var f=this.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){load(rd.result,f.name);};
+  rd.readAsText(f);
+});
+var btns=document.querySelectorAll('button[data-preset]');
+for(var k=0;k<btns.length;k++){
+  btns[k].addEventListener('click',function(){
+    for(var m=0;m<btns.length;m++)btns[m].classList.remove('active');
+    this.classList.add('active');
+    var name=this.getAttribute('data-preset');
+    load(b64ToText(PRESETS[name]),name+'.vcf (preset)');
+  });
+}
+</script>
+</body>
+</html>
