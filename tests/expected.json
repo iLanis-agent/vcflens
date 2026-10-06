@@ -1,0 +1,133 @@
+{
+ "items": [
+  {
+   "file": "simple.vcf",
+   "contact_count": 1,
+   "contacts": [
+    {
+     "version": "3.0",
+     "fn": "Dr. Jane Marie Doe, PhD",
+     "n": {
+      "family": "Doe",
+      "given": "Jane",
+      "additional": "Marie",
+      "prefix": "Dr.",
+      "suffix": "PhD"
+     },
+     "org": [
+      "Acme Corp",
+      "Research Division"
+     ],
+     "title": "Chief Scientist",
+     "tel": [
+      {
+       "value": "+1-555-0100",
+       "types": [
+        "CELL"
+       ]
+      },
+      {
+       "value": "+1-555-0200",
+       "types": [
+        "WORK",
+        "VOICE"
+       ]
+      }
+     ],
+     "email": [
+      {
+       "value": "jane@example.com",
+       "types": [
+        "HOME"
+       ]
+      },
+      {
+       "value": "j.doe@acme.example",
+       "types": [
+        "WORK"
+       ]
+      }
+     ],
+     "adr": [
+      {
+       "types": [
+        "HOME"
+       ],
+       "city": "Springfield",
+       "region": "IL",
+       "code": "62704",
+       "country": "USA"
+      }
+     ],
+     "bday": "19850412",
+     "url": [
+      "https://jane.example.com"
+     ],
+     "note": "First line\nSecond line",
+     "other": 1
+    }
+   ]
+  },
+  {
+   "file": "multi.vcf",
+   "contact_count": 2,
+   "folded_lines": 1,
+   "contacts": [
+    {
+     "version": "2.1",
+     "fn": "Bob Smith",
+     "n": {
+      "family": "Smith",
+      "given": "Bob",
+      "additional": "",
+      "prefix": "",
+      "suffix": ""
+     },
+     "tel": [
+      {
+       "value": "+44 20 7946 0958",
+       "types": [
+        "HOME",
+        "VOICE"
+       ]
+      }
+     ],
+     "note": "A very long note that gets folded onto a second physical line according to the vCard folding rules"
+    },
+    {
+     "version": "4.0",
+     "fn": "Ana Garcia",
+     "email": [
+      {
+       "value": "ana@example.org",
+       "types": [
+        "home"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "qp.vcf",
+   "contact_count": 1,
+   "contacts": [
+    {
+     "version": "2.1",
+     "fn": "J\u00fcrg_M\u00fcller",
+     "n": {
+      "family": "M\u00fcller",
+      "given": "J\u00fcrg",
+      "additional": "",
+      "prefix": "",
+      "suffix": ""
+     }
+    }
+   ]
+  },
+  {
+   "file": "broken.vcf",
+   "expect_warning": "missing END:VCARD"
+  }
+ ]
+}
