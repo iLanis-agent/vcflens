@@ -1,0 +1,14 @@
+BEGIN:VCARD
+VERSION:2.1
+N:Smith;Bob;;;
+FN:Bob Smith
+TEL;HOME;VOICE:+44 20 7946 0958
+NOTE:A very long note that gets folded onto a second physical line accor
+ ding to the vCard folding rules
+END:VCARD
+BEGIN:VCARD
+VERSION:4.0
+N:Garcia;Ana;;;
+FN:Ana Garcia
+EMAIL;TYPE=home:ana@example.org
+END:VCARD
