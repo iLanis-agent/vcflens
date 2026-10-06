@@ -1,0 +1,16 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Doe;Jane;Marie;Dr.;PhD
+FN:Dr. Jane Marie Doe\, PhD
+ORG:Acme Corp;Research Division
+TITLE:Chief Scientist
+TEL;TYPE=CELL:+1-555-0100
+TEL;TYPE=WORK,VOICE:+1-555-0200
+EMAIL;TYPE=HOME:jane@example.com
+EMAIL;TYPE=WORK:j.doe@acme.example
+ADR;TYPE=HOME:;;123 Main St;Springfield;IL;62704;USA
+BDAY:19850412
+URL:https://jane.example.com
+NOTE:First line\nSecond line
+X-CUSTOM-ID:abc-123
+END:VCARD
