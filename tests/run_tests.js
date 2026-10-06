@@ -10,8 +10,13 @@ function eq(a,b,label){
   if(JSON.stringify(a)===JSON.stringify(b)){pass++;return;}
   fail++;console.log('FAIL '+label+': got '+JSON.stringify(a)+' want '+JSON.stringify(b));
 }
+function load(p){
+  const b=p+'.b64';
+  if(fs.existsSync(b))return Buffer.from(fs.readFileSync(b,'utf8').trim(),'base64').toString('utf8');
+  return fs.readFileSync(p,'utf8');
+}
 for(const item of items){
-  const text=fs.readFileSync(path.join(__dirname,'corpus',item.file),'utf8');
+  const text=load(path.join(__dirname,'corpus',item.file));
   const r=engine.parse(text);
   const T=item.file+' ';
   if(item.expect_warning){
